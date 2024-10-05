@@ -3,19 +3,19 @@ clear all;
 close all;
 
 %% Parameters
-N_x = 4; % Number of elements in x-dimension
-N_y = 4; % Number of elements in y-dimension
-N = N_x * N_y; % Total number of elements in URA
-D_az = 180; % Azimuth angle range
-D_el = 90; % Elevation angle range
+N_x = 4; 
+N_y = 4; 
+N = N_x * N_y; 
+D_az = 181;                     
+D_el = 91; 
 K = 10; % Number of measurements (snapshots)
-L = 1; % Number of incoming signals
-SNR_dB = 20; % Signal-to-noise ratio in dB
-d = 0.5; % Element spacing in wavelengths
+L = 1; % Number of different incoming signals   (AoAs)
+SNR_dB = 20; 
+d = 0.5; 
 
 %% Grids
-azimuth_angles = linspace(-90, 90, D_az / 2);
-elevation_angles = linspace(-45, 45, D_el / 2);
+azimuth_angles = linspace(-90, 90, D_az);
+elevation_angles = linspace(-45, 45, D_el);
 
 %% Steering vector function for URA
 steering_vector_ura = @(theta, phi, N_x, N_y, d) ...
@@ -33,7 +33,7 @@ end
 %% Random beamforming matrix W
 W = (1 / sqrt(N)) * exp(1j * 2 * pi * rand(N, K));
 
-%% DFT matrix (commented out, remove if needed)
+%% DFT matrix
 % F = dftmtx(N);
 
 %% Sensing matrix Phi
@@ -63,6 +63,7 @@ noise = sqrt(noise_power / 2) * (randn(K, 1) + 1j * randn(K, 1));
 y_noisy_rf_chain = y_compressed + noise;
 
 %% Displaying true AoAs for reference
+disp('--------- True AoAs -----------')
 disp('True Azimuth Angles (degrees):');
 disp(true_azimuths);
 disp('True Elevation Angles (degrees):');
@@ -70,21 +71,50 @@ disp(true_elevations);
 
 %% Reconstruct it with the simplest mathematical model
 basic_reconstruction = pinv(Phi) * y_noisy_rf_chain;
+
+% Find indices of maximum values (estimated AoAs)
+[~, max_idx] = max(abs(basic_reconstruction));
+[estimated_az_idx, estimated_el_idx] = ind2sub([D_az, D_el], max_idx);
+
 basic_reconstruction = reshape(basic_reconstruction, length(azimuth_angles), length(elevation_angles));
 
+
+% Display the corresponding angles
+disp('--------- Basic construction -----------')
+disp('Estimated Azimuth Angle:');
+disp(azimuth_angles(estimated_az_idx));
+disp('Estimated Elevation Angle:');
+disp(elevation_angles(estimated_el_idx));
+
 figure;
-surf(abs(basic_reconstruction));
-title('Basic reconstruction using pinv');
+surf(elevation_angles, azimuth_angles, abs(basic_reconstruction));
+title(sprintf('Basic Reconstruction (Azimuth: %.2f°, Elevation: %.2f°)', ...
+    azimuth_angles(estimated_az_idx), elevation_angles(estimated_el_idx)));
 shading interp
 %% Reconstruction with algorithm
-max_iter = 10;        % Maximum number of iterations
-tol = 1e-5;           % Tolerance for residual norm
+max_iter = 10;      
+tol = 1e-5;         
 
-% Call the function
 x_omp = omp(Phi, y_noisy_rf_chain, max_iter, tol);
 
+% Find indices of maximum values (estimated AoAs)
+[~, max_idx] = max(abs(x_omp));
+[estimated_az_idx, estimated_el_idx] = ind2sub([D_az, D_el], max_idx);
+
 x_omp_mat = reshape(x_omp, length(azimuth_angles), length(elevation_angles));
+
+
+% Display the corresponding angles
+disp('--------- OMP construction -----------')
+disp('Estimated Azimuth Angle:');
+disp(azimuth_angles(estimated_az_idx));
+disp('Estimated Elevation Angle:');
+disp(elevation_angles(estimated_el_idx));
+
 figure;
-surf(abs(x_omp_mat));
-title('Reconstruction using OMP');
+surf(elevation_angles, azimuth_angles,abs(x_omp_mat));
+xlim([min(elevation_angles) max(elevation_angles)])
+ylim([min(azimuth_angles) max(azimuth_angles)])
+title(sprintf('OMP Reconstruction (Azimuth: %.2f°, Elevation: %.2f°)', ...
+    azimuth_angles(estimated_az_idx), elevation_angles(estimated_el_idx)));
 shading interp

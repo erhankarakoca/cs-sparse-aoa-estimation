@@ -9,10 +9,10 @@ function x_omp = omp(Phi, y, max_iter, tol)
     % - x_omp: Reconstructed sparse signal
     
     % Initialize variables
-    residual = y;  % Initial residual is the measured signal
-    Phi_normalized = Phi ./ vecnorm(Phi);  % Normalize columns of Phi
-    active_set = [];  % Initialize the active set
-    x_omp = zeros(size(Phi, 2), 1);  % Initialize sparse solution
+    residual = y;  
+    Phi_normalized = Phi ./ vecnorm(Phi);  
+    active_set = [];  
+    x_omp = zeros(size(Phi, 2), 1);  
 
     for iter = 1:max_iter
         % Step 1: Find the index of the column most correlated with residual
@@ -27,7 +27,7 @@ function x_omp = omp(Phi, y, max_iter, tol)
         % Step 3: Update residual
         residual = y - Phi_active * x_ls;
         
-        % Step 4: Check stopping condition (if residual norm is below tolerance)
+        % Step 4: Check stopping condition 
         if norm(residual, 'fro') < tol
             disp("Stopping OMP");
             break;
