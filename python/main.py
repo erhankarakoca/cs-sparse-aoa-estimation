@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 # Parameters
 N_x = 4  # Number of elements in x-dimension
-N_y = 4  # Number of elements in y-dimension
+N_y = 4 # Number of elements in y-dimension
 N = N_x * N_y  # Total number of elements in URA
 D_az = 181  # Azimuth angle range
 D_el = 91  # Elevation angle range
@@ -34,7 +34,7 @@ for phi in elevation_angles:
 W = (1 / np.sqrt(N)) * np.exp(1j * 2 * np.pi * np.random.rand(N, K))
 
 # Sensing matrix Phi
-Phi = W.conj().T @ A
+Phi = np.conj(W).T @ A
 
 # Random incoming signals (true AoAs)
 true_azimuths = np.random.choice(azimuth_angles, L, replace=False)
@@ -50,7 +50,7 @@ for i in range(L):
     X += a * s[i]
 
 # Compressed received signal using random beamforming
-y_compressed = W.conj().T @ X
+y_compressed =  np.conj(W).T @ X
 
 # Noisy received signal
 SNR = 10 ** (SNR_dB / 10)
@@ -63,12 +63,13 @@ print("True Azimuth Angles (degrees):", true_azimuths)
 print("True Elevation Angles (degrees):", true_elevations)
 
 # Reconstruct it with the simplest mathematical model (using pinv)
-basic_reconstruction = np.linalg.pinv(Phi) @ y_noisy_rf_chain
+# basic_reconstruction = np.linalg.pinv(Phi) @ y_noisy_rf_chain
+basic_reconstruction = np.linalg.lstsq(Phi, y_noisy_rf_chain, rcond=None)[0]
 # Find the indices of the maximum values (estimated AoAs)
 max_idx = np.argmax(np.abs(basic_reconstruction))
-estimated_az_idx, estimated_el_idx = np.unravel_index(max_idx, [D_az, D_el])
+estimated_el_idx, estimated_az_idx = np.unravel_index(max_idx, [D_el, D_az])
 
-basic_reconstruction = np.abs(basic_reconstruction.reshape(len(elevation_angles), len(azimuth_angles)))
+basic_reconstruction_mat = np.abs(basic_reconstruction.reshape(len(elevation_angles), len(azimuth_angles)))
 
 # Corresponding angles
 estimated_azimuth = azimuth_angles[estimated_az_idx]
@@ -79,57 +80,64 @@ fig = plt.figure(figsize=(10, 7))
 ax = fig.add_subplot(projection='3d')
 azimuth_mesh, elevation_mesh = np.meshgrid(azimuth_angles, elevation_angles)
 
-ax.plot_surface(azimuth_mesh, elevation_mesh, basic_reconstruction, cmap='viridis', edgecolor='none')
-ax.set_xlabel('Elevation Angle (degrees)')
-ax.set_ylabel('Azimuth Angle (degrees)')
+ax.plot_surface(azimuth_mesh, elevation_mesh,  basic_reconstruction_mat, cmap='viridis', edgecolor='none')
+ax.set_xlabel('Azimuth Angle (degrees)')
+ax.set_ylabel('Elevation Angle (degrees)')
 ax.set_zlabel('Magnitude')
 ax.set_title(f'Basic Reconstruction (Azimuth: {estimated_azimuth:.2f}°, Elevation: {estimated_elevation:.2f}°)')
 plt.show()
 
 # Reconstruction with OMP algorithm
 def omp(Phi, y, max_iter, tol):
-    residual = y
-    idx_set = []
-    x_hat = np.zeros(Phi.shape[1], dtype=complex).reshape(-1,1)
+    # Initialize variables
+    residual = y.copy()
+    vecnorm_Phi = np.linalg.norm(Phi, axis=0, keepdims=True)
+    Phi_normalized = Phi / vecnorm_Phi  # Normalize columns of Phi
+    active_set = []  # List to store indices of the active set
+    x_omp = np.zeros(Phi.shape[1], dtype=complex) # Initialize solution vector
 
     for _ in range(max_iter):
-        # Correlation step
-        correlations = np.abs(Phi.conj().T.dot(residual))
-        idx = np.argmax(correlations)
-        idx_set.append(idx)
+        # Step 1: Find the index of the column most correlated with the residual
+        correlations = np.abs(np.conj(Phi_normalized).T @ residual)  # Correlation with residual
+        idx = np.argmax(correlations)  # Index of most correlated column
+        active_set.append(idx)  # Update active set with the new index
 
-        # Solve least squares problem
-        Phi_selected = Phi[:, idx_set]
-        x_ls, _, _, _ = lstsq(Phi_selected, y)
+        # Step 2: Solve least-squares problem on selected columns
+        Phi_active = Phi[:, active_set]  # Select columns corresponding to the active set
+        x_ls = np.linalg.pinv(Phi_active) @ y  # Least-squares solution
 
-        # Update residual
-        residual = y - Phi_selected.dot(x_ls)
+        # Step 3: Update residual
+        residual = y - Phi_active @ x_ls
 
-        # Check for convergence
-        if np.linalg.norm(residual) < tol:
+        # Step 4: Check stopping condition
+        if np.linalg.norm(residual, 'fro') < tol:
+            print("Stopping OMP")
             break
 
-    # Construct sparse signal
-    x_hat[idx_set] = x_ls
-    return x_hat
+    # Final solution: Assign values to the corresponding active set indices
+    x_omp[active_set] = x_ls.reshape(-1)
+    return x_omp
 
 
 max_iter = 10
-tol = 1e-5
+tol = 1e-7
 
 x_omp = omp(Phi, y_noisy_rf_chain, max_iter, tol)
 # Find the indices of the maximum values (estimated AoAs)
 max_idx = np.argmax(np.abs(x_omp))
-estimated_az_idx, estimated_el_idx = np.unravel_index(max_idx, [D_az, D_el])
+estimated_el_idx, estimated_az_idx = np.unravel_index(max_idx, [D_el, D_az])
+# Corresponding angles
+estimated_azimuth = azimuth_angles[estimated_az_idx]
+estimated_elevation = elevation_angles[estimated_el_idx]
 
 x_omp_mat = x_omp.reshape(len(elevation_angles), len(azimuth_angles))
 
 fig = plt.figure(figsize=(10, 7))
 ax = fig.add_subplot(projection='3d')
 # Plot reconstruction using OMP
-ax.plot_surface(azimuth_mesh, elevation_mesh,  np.abs(x_omp_mat), cmap=plt.cm.YlGnBu_r)
-ax.set_xlabel('Elevation Angle (degrees)')
-ax.set_ylabel('Azimuth Angle (degrees)')
+ax.plot_surface(azimuth_mesh, elevation_mesh,  np.abs(x_omp_mat), cmap='viridis', edgecolor='none')
+ax.set_xlabel('Azimuth Angle (degrees)')
+ax.set_ylabel('Elevation Angle (degrees)')
 ax.set_zlabel('Magnitude')
 ax.set_title(f'Algorithm Reconstruction (Azimuth: {estimated_azimuth:.2f}°, Elevation: {estimated_elevation:.2f}°)')
 plt.show()
