@@ -1,5 +1,8 @@
 ### Manually added ###
 .DS_Store
+*.DS_Store
+*/.DS_Store
+**/.DS_Store
 ### MATLAB ###
 # Windows default autosave extension
 *.asv
