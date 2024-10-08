@@ -3,15 +3,15 @@ from scipy.linalg import lstsq
 import matplotlib.pyplot as plt
 
 # Parameters
-N_x = 4  # Number of elements in x-dimension
-N_y = 4 # Number of elements in y-dimension
-N = N_x * N_y  # Total number of elements in URA
-D_az = 181  # Azimuth angle range
-D_el = 91  # Elevation angle range
+N_x = 4  
+N_y = 4 
+N = N_x * N_y  
+D_az = 181  
+D_el = 91  
 K = 10  # Number of measurements (snapshots)
 L = 1  # Number of incoming signals
-SNR_dB = 20  # Signal-to-noise ratio in dB
-d = 0.5  # Element spacing in wavelengths
+SNR_dB = 20 
+d = 0.5  
 
 # Grids
 azimuth_angles = np.linspace(-90, 90, D_az)
