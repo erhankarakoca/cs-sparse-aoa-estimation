@@ -11,7 +11,7 @@ function device_calibrate(freq,tx_device,rx_device)
 if ~exist('freq','var') || isempty(freq)
     freq = 29e9;
 end
-fout = fopen('freq.txt','w');
+fout = fopen('..\..\python\Sivers\freq.txt','w');
 fprintf(fout,'%s\n',freq);
 fclose(fout);
 
