@@ -10,8 +10,8 @@ function evkObject = evk(serialNumber,frequency,TxRx)
 % TxRx: mode selection, if you provide this argument the device will
 %               operate in Tx mode, if not provided the device will
 %               operate in Rx mode.
-% Last Update: 26.01.2024 by MYY
-
+% Last Update: 10.10.2024 by MYY
+cd '..\..\python\Sivers\';
 if ~exist("serialNumber","var")
     disp("Error, enter serial number")
     evkObject = [];
@@ -25,4 +25,5 @@ if exist("TxRx","var") && ~isempty(TxRx)
 else
     evkObject = py.hisar_scripts.create_evk(serialNumber,frequency);
 end
+cd '..\..\matlab\Sivers\';
 end
