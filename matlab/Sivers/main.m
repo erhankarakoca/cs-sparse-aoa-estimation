@@ -1,11 +1,12 @@
 %% Parameters
-%%% C:\Sivers Semiconductors\Rapinoe\API\config\ram
 clc;
 clear;
 freq = 25e9;
-AGC_atten = 10; % 1 ile 56 
+AGC_atten = 35; % 1 ile 56 
 period = 491.52e3;
-
+addpath('..\..\python\Sivers\');
+addpath('.\')
+pyenv(Version="C:\Users\yaser.yagan\AppData\Local\anaconda3\python.exe");
 %% RFSoC Initialization 
 ip_address = "192.168.0.10";
 dat_client = tcpclient( ip_address, 8082); % TCP port to handle data
@@ -52,7 +53,7 @@ send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl power 0 0')); % güç ölçme
 
 % W = (1 / sqrt(16)) * exp(1j * 2 * pi * rand(16, 50));
 load('W_matrix_init.mat');
-
+% W = [W zeros(16,5)];
 % array = []; % ya URA objesi, ya da x,y koordinatları
 array = [-2 -2 -2 -2 -1 -1 -1 -1 1 1 1 1 2 2 2 2; ...
     -2 -1 1 2 -2 -1 1 2 -2 -1 1 2 -2 -1 1 2];
@@ -63,7 +64,7 @@ evkObject = uploadRAMTable(evkObject,array,W);
 
 
 %% Receiving
-
+pause(5)
 send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 1000 50')); % 0 samples_per_beam number_of_beams
 % send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl bix %d',beam_rx));
 
@@ -72,6 +73,11 @@ send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 1000 50')); % 0 sample
 period = 1000 * 50; %n_rx_beams*period
 dataout = acquire_data(cmd_client, dat_client, bin2dec('1100'), period);
 
-IQv = double(dataout(1,:))/2^15 + 1j * double(dataout(2,:))/2^15; % vertical pol
-IQh = double(dataout(3,:))/2^15 + 1j * double(dataout(4,:))/2^15; % vertical pol
+IQv = dataout(1,:); % vertical pol
+IQh = dataout(2,:); % horizontal pol
 
+plot(real(IQv))
+hold on 
+for i = 1000:1000:50e3
+    xline(i)
+end
