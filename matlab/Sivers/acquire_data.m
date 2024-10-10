@@ -17,11 +17,11 @@ else
     if nchannels > 1
         data_temp = zeros(nchannels,length(dataout));
         for i=1:nchannels
-            data_temp(i,:) = double(dataout(i*2-1,:)) + 1j * double(dataout(i*2,:));
+            data_temp(i,:) = (double(dataout(i*2-1,:)) + 1j * double(dataout(i*2,:)))/2^15;
         end
         dataout = data_temp;
     else
-        dataout = double(dataout(1,:)) + 1j * double(dataout(2,:));
+        dataout = (double(dataout(1,:)) + 1j * double(dataout(2,:)))/2^15;
     end
 end
 
