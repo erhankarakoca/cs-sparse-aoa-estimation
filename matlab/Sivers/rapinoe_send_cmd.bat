@@ -2,6 +2,8 @@
 
 :: warning: case-sensitive
 
+call "C:\Users\yaser.yagan\AppData\Local\anaconda3\Scripts\activate.bat"
+
 @echo off
 
 SET SERIAL_NUMBER=%1
