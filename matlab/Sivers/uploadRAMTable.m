@@ -9,7 +9,7 @@ function evkObject = uploadRAMTable(evkObject,array,weights)
 % The function currently applies the same weights to vertical and
 % horizontal polarizations, it will be extended later %%%
 % Last Update: 26.01.2024 by MYY
-
+cd '..\..\python\Sivers\';
 if ~exist("evkObject","var") || isempty(evkObject)
     disp("Error, provide evkObject")
     evkObject = [];
@@ -46,8 +46,8 @@ if (size(array,1) == 3 && length(unique(array(3,:))) > 1) ...
 end
 
 if ~(any(size(weights) == 16))
-     disp("Error, weight should be a vector of 16 elements or a" + ...
-         " matrix of 16-element vectors")
+    disp("Error, weight should be a vector of 16 elements or a" + ...
+        " matrix of 16-element vectors")
     evkObject = [];
     return;
 end
@@ -60,7 +60,7 @@ N = size(weights,2);
 for i = 1:N
     row = py.dict();
     [Enable_vec,Atten_vec,I_vec,Q_vec] = weight2reg(weights(:,i));
-    % direkt registerlara birşey yazılacaksa 
+    % direkt registerlara birşey yazılacaksa
     w = int16(mapping2Sivers(array,x,y,[Enable_vec,Atten_vec,I_vec,Q_vec]));
     for k = 0:15
         row{"bf_enable_v" + num2str(15-k)} = w(k+1,1);
@@ -72,6 +72,8 @@ for i = 1:N
         row{"bf_vpa_q_h" + num2str(15-k)} = w(k+17,4);
         row{"bf_vpa_i_h" + num2str(15-k)} = w(k+17,3);
     end
-    evkObject = py.hisar_scripts.write_RAM_row(evkObject,row,'ram',i-1);
+    evkObject = py.hisar_scripts.write_RAM_row(evkObject,row,'ram',int32(i-1));
 
+end
+cd '..\..\matlab\Sivers\';
 end
