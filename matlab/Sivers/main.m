@@ -50,7 +50,6 @@ send_cmd(5,cmd_client,1,d1,0,sprintf('rxctl agc set data %d',AGC_atten));
 send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl power 0 0')); % güç ölçmesin
 
 %% Upload Compressive Sensing Weights 
-
 % W = (1 / sqrt(16)) * exp(1j * 2 * pi * rand(16, 50));
 load('W_matrix_init.mat');
 % W = [W zeros(16,5)];
@@ -62,7 +61,7 @@ array = [-2 -2 -2 -2 -1 -1 -1 -1 1 1 1 1 2 2 2 2; ...
 %   | W(3,x)   W(7,x)   W(11,x)   W(15,x) |
 %   | W(2,x)   W(6,x)   W(10,x)   W(14,x) |
 %   | W(1,x)   W(5,x)   W(9,x)    W(13,x) |
-evkObject = uploadRAMTable(evkObject,array,W); 
+[evkObject, W_quantized] = uploadRAMTable(evkObject,array,W); 
 % eklenecek: bu fonksiyondan qunatized W alınacak
 
 
