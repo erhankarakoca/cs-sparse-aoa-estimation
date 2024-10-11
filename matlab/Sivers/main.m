@@ -57,6 +57,11 @@ load('W_matrix_init.mat');
 % array = []; % ya URA objesi, ya da x,y koordinatları
 array = [-2 -2 -2 -2 -1 -1 -1 -1 1 1 1 1 2 2 2 2; ...
     -2 -1 1 2 -2 -1 1 2 -2 -1 1 2 -2 -1 1 2];
+% bu array şu maplamayı ifade eder:
+%   | W(4,x)   W(8,x)   W(12,x)   W(16,x) |
+%   | W(3,x)   W(7,x)   W(11,x)   W(15,x) |
+%   | W(2,x)   W(6,x)   W(10,x)   W(14,x) |
+%   | W(1,x)   W(5,x)   W(9,x)    W(13,x) |
 evkObject = uploadRAMTable(evkObject,array,W); 
 % eklenecek: bu fonksiyondan qunatized W alınacak
 
