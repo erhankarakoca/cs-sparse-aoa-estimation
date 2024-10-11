@@ -1,4 +1,4 @@
-function evkObject = uploadRAMTable(evkObject,array,weights)
+function [evkObject, W_quantized] = uploadRAMTable(evkObject,array,weights)
 % This function uploads a BF weights table to the evk.
 % INPUTS:
 % evkObject: must be created using evk.m function
@@ -6,9 +6,11 @@ function evkObject = uploadRAMTable(evkObject,array,weights)
 %           positions of the elements (to perform weight mapping).
 % weights: a 16x1 or 16xN matrix of complex BF weights, N is the number of
 %           different beams (weight vectors).
+% W_quantized: The real applied weights to the EVK
 % The function currently applies the same weights to vertical and
 % horizontal polarizations, it will be extended later %%%
-% Last Update: 26.01.2024 by MYY
+% Last Update: 11.10.2024 by MYY
+
 cd '..\..\python\Sivers\';
 if ~exist("evkObject","var") || isempty(evkObject)
     disp("Error, provide evkObject")
@@ -57,9 +59,19 @@ end
 
 
 N = size(weights,2);
+W_quantized = zeros(size(weights));
 for i = 1:N
     row = py.dict();
     [Enable_vec,Atten_vec,I_vec,Q_vec] = weight2reg(weights(:,i));
+    quanitzed_mag = 10.^(-Atten_vec/20);
+    quantized_I = zeros(size(I_vec));
+    quantized_I(I_vec > 15) = ((I_vec(I_vec > 15) - 1) ./15)-1;
+    quantized_I(I_vec <= 15) = (I_vec(I_vec <= 15) ./15)-1;
+    quantized_Q = zeros(size(Q_vec));
+    quantized_Q(Q_vec > 15) = ((Q_vec(Q_vec > 15) - 1) ./15)-1;
+    quantized_Q(Q_vec <= 15) = (Q_vec(Q_vec <= 15) ./15)-1;
+    W_quantized(:,i) = quanitzed_mag .* (quantized_I + 1j * quantized_Q);
+
     % direkt registerlara birşey yazılacaksa
     w = int16(mapping2Sivers(array,x,y,[Enable_vec,Atten_vec,I_vec,Q_vec]));
     for k = 0:15
