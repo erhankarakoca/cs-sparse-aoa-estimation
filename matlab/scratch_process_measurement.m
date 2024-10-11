@@ -1,6 +1,10 @@
 clc;
 clear all;
 close all;
+%% Load
+load("W_matrix_init.mat");
+load("W_matrix_quantized.mat");
+load("meas1.mat");
 
 %% Sivers Configuration Parameters
 N_x = 4; 
@@ -14,7 +18,38 @@ f = 27e9;
 
 wavelength = physconst('LightSpeed')/f ; 
 d = 8.20e-3 / wavelength ;
+% d=0.7;
+% Create a time vector based on the length of your IQ data
+fs = 491.52e6 ; 
+t = (0:length(IQv)-1)/fs;
 
+fc = 10e6;
+frequency_shift = exp(-1j*2*pi*fc*t);
+
+IQ = IQv .* frequency_shift;
+
+figure
+plot(real(IQ))
+hold on
+plot(imag(IQ))
+%%
+scope_1 = spectrumAnalyzer(InputDomain="time", SampleRate=fs, AveragingMethod="exponential",...
+    PlotAsTwoSidedSpectrum=true,...
+    RBWSource="auto",SpectrumUnits="dBW");
+scope_1(IQ')
+scope_1.release
+
+IQ_filtered = lowpass(IQ, 8e6 , fs, ImpulseResponse="iir",Steepness=0.80);
+scope_2 = spectrumAnalyzer(InputDomain="time", SampleRate=fs, AveragingMethod="exponential",...
+    PlotAsTwoSidedSpectrum=true,...
+    RBWSource="auto",SpectrumUnits="dBW");
+scope_2(IQ_filtered')
+scope_2.release
+
+figure
+plot(real(IQ_filtered))
+hold on
+plot(imag(IQ_filtered))
 %% Grids
 azimuth_angles = linspace(-90, 90, D_az);
 elevation_angles = linspace(-45, 45, D_el);
@@ -33,17 +68,34 @@ for phi = elevation_angles
 end
 
 %% Random beamforming matrix W
-load("W_matrix_init.mat");
-load("meas1.mat");
-y_noisy_rf_chain = IQh;
-start_index = 400;
-sample_indexes = 400:1000:50000;
-y_sampled = y_noisy_rf_chain([sample_indexes]);
+%   | W(4,x)   W(8,x)   W(12,x)   W(16,x) |
+%   | W(3,x)   W(7,x)   W(11,x)   W(15,x) |
+%   | W(2,x)   W(6,x)   W(10,x)   W(14,x) |
+%   | W(1,x)   W(5,x)   W(9,x)    W(13,x) |
+
+
+
+% W_remap = zeros(4, size(W, 2));
+
+% Remap according to the given structure
+W_remap = W_quantized([4:-1:1,8:-1:5,12:-1:9, 16:-1:13], :);   
+% A_remap = A([4:-1:1,8:-1:5,12:-1:9, 16:-1:13], :); 
+
+
+% Display the remapped matrix
+% disp(W_remap);
+
+
+
+y_noisy_rf_chain = IQ_filtered;
+% start_index = 400;
+sample_indexes = 147+400:1000:50000;
+y_sampled = y_noisy_rf_chain(sample_indexes).';
 
 %% Sensing matrix Phi
-Phi = W' * A;
+Phi = W_remap' * A;
 
-%% TO DO : Requires Antenna mapping for SIVERS
+%% TO DO : Requires Antenna mapping for SIVERS --> mapping(W, A)
 
 %% Reconstruct it with the simplest mathematical model
 basic_reconstruction = pinv(Phi) * y_sampled;
@@ -68,7 +120,7 @@ title(sprintf('Basic Reconstruction (Azimuth: %.2f°, Elevation: %.2f°)', ...
     azimuth_angles(estimated_az_idx), elevation_angles(estimated_el_idx)));
 shading interp
 %% Reconstruction with algorithm
-max_iter = 10;      
+max_iter = 3;      
 tol = 1e-5;         
 
 x_omp = omp(Phi, y_sampled, max_iter, tol);

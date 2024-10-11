@@ -11,7 +11,7 @@ D_el = 91;
 K = 10; % Number of measurements (snapshots)
 L = 1; % Number of different incoming signals   (AoAs)
 SNR_dB = 20; 
-d = 0.5; 
+d = 1; 
 
 %% Grids
 azimuth_angles = linspace(-90, 90, D_az);
