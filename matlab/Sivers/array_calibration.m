@@ -57,24 +57,23 @@ array = [-2 -2 -2 -2 -1 -1 -1 -1 1 1 1 1 2 2 2 2; ...
 %   | W(2,x)   W(6,x)   W(10,x)  W(14,x) |
 %   | W(3,x)   W(7,x)   W(11,x)  W(15,x) |
 %   | W(4,x)   W(8,x)   W(12,x)  W(16,x) |
-W = eye(16); % in each configuration turn on a single element
-weight2reg(W(:,1))
+W = [eye(16) eye(16)]; % in each configuration turn on a single element
 [evkObject, W_quantized] = uploadRAMTable(evkObject,array,W); 
 
 %% Calibration
 
 pause(5)
-send_cmd(2,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 10000 16')); % 0 samples_per_beam number_of_beams
+send_cmd(2,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 10000 32')); % 0 samples_per_beam number_of_beams
 
-period = 10000 * 16; %n_rx_beams*period
+period = 10000 * 32; %n_rx_beams*period
 dataout = acquire_data(cmd_client, dat_client, bin2dec('1100'), period);
 
 IQv = dataout(1,:); % vertical pol
 IQh = dataout(2,:); % horizontal pol
 
 W_calibration = zeros(16,2);
-offset1 = 200;
-offset2 = 200;
+offset1 = 1000;
+offset2 = 1000;
 for i = 1:16
     tone_samples_v = IQv(offset1 + (i-1)*10000:(i)*10000 - offset2);
     tone_spectrum = fft(tone_samples_v);
@@ -85,4 +84,22 @@ for i = 1:16
 end
 W_calibration(:,1) = conj(W_calibration(:,1) ./  W_calibration(1,1));
 W_calibration(:,2) = conj(W_calibration(:,2) ./  W_calibration(1,2));
+
+%% Calibrated signal
+for i = 1:16
+    IQv((i-1)*10000+1:i*10000) = IQv((i-1)*10000+1:i*10000).* W_calibration(i,1);
+    IQh((i-1)*10000+1:i*10000) = IQh((i-1)*10000+1:i*10000).* W_calibration(i,2);
+end
+plot(real(IQh))
+%% Calibrated Measurement
+W = [eye(16) W_calibration(:,1)]; % in each configuration turn on a single element
+[evkObject, W_quantized] = uploadRAMTable(evkObject,array,W); 
+pause(5)
+send_cmd(2,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 10000 17')); % 0 samples_per_beam number_of_beams
+
+period = 10000 * 17; %n_rx_beams*period
+dataout = acquire_data(cmd_client, dat_client, bin2dec('1100'), period);
+
+IQv = dataout(1,:); % vertical pol
+IQh = dataout(2,:); % horizontal pol
 
