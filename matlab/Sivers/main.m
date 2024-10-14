@@ -50,17 +50,17 @@ send_cmd(5,cmd_client,1,d1,0,sprintf('rxctl agc set data %d',AGC_atten));
 send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl power 0 0')); % güç ölçmesin
 
 %% Upload Compressive Sensing Weights 
-% W = (1 / sqrt(16)) * exp(1j * 2 * pi * rand(16, 50));
-load('W_matrix_init.mat');
+W = (1 / sqrt(16)) * exp(1j * 2 * pi * rand(16, 100));
+% load('W_matrix_init.mat');
 % W = [W zeros(16,5)];
 % array = []; % ya URA objesi, ya da x,y koordinatları
 array = [-2 -2 -2 -2 -1 -1 -1 -1 1 1 1 1 2 2 2 2; ...
-    -2 -1 1 2 -2 -1 1 2 -2 -1 1 2 -2 -1 1 2];
+    2 1 -1 -2 2 1 -1 -2 2 1 -1 -2 2 1 -1 -2];
 % bu array şu maplamayı ifade eder:
-%   | W(4,x)   W(8,x)   W(12,x)   W(16,x) |
-%   | W(3,x)   W(7,x)   W(11,x)   W(15,x) |
-%   | W(2,x)   W(6,x)   W(10,x)   W(14,x) |
-%   | W(1,x)   W(5,x)   W(9,x)    W(13,x) |
+%   | W(1,x)   W(5,x)   W(9,x)   W(13,x) |
+%   | W(2,x)   W(6,x)   W(10,x)  W(14,x) |
+%   | W(3,x)   W(7,x)   W(11,x)  W(15,x) |
+%   | W(4,x)   W(8,x)   W(12,x)  W(16,x) |
 [evkObject, W_quantized] = uploadRAMTable(evkObject,array,W); 
 % eklenecek: bu fonksiyondan qunatized W alınacak
 
@@ -69,19 +69,19 @@ array = [-2 -2 -2 -2 -1 -1 -1 -1 1 1 1 1 2 2 2 2; ...
 
 %% Receiving
 pause(5)
-send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 1000 50')); % 0 samples_per_beam number_of_beams
+send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 1000 100')); % 0 samples_per_beam number_of_beams
 % send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl bix %d',beam_rx));
 
 
 
-period = 1000 * 50; %n_rx_beams*period
+period = 1000 * 100; %n_rx_beams*period
 dataout = acquire_data(cmd_client, dat_client, bin2dec('1100'), period);
 
 IQv = dataout(1,:); % vertical pol
 IQh = dataout(2,:); % horizontal pol
 
-plot(real(IQv))
-hold on 
-for i = 1000:1000:50e3
-    xline(i)
-end
+% plot(real(IQv))
+% hold on 
+% for i = 1000:1000:50e3
+%     xline(i)
+% end
