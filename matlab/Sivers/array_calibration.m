@@ -75,22 +75,21 @@ W_calibration = zeros(16,2);
 offset1 = 1000;
 offset2 = 1000;
 for i = 1:16
-    tone_samples_v = IQv(offset1 + (i-1)*10000:(i)*10000 - offset2);
-    tone_spectrum = fft(tone_samples_v);
+    tone_samples_v = IQv(offset1 + (i-1)*10000+1:(i)*10000 - offset2);
+    tone_spectrum = fft(tone_samples_v)/(10000-offset1-offset2);
     W_calibration(i,1) = tone_spectrum(abs(tone_spectrum) == max(abs(tone_spectrum)));
-    tone_samples_h = IQh(offset1 + (i-1)*10000:(i)*10000 - offset2);
-    tone_spectrum = fft(tone_samples_h);
+    tone_samples_h = IQh(offset1 + (i-1)*10000+1:(i)*10000 - offset2);
+    tone_spectrum = fft(tone_samples_h)/(10000-offset1-offset2);
     W_calibration(i,2) = tone_spectrum(abs(tone_spectrum) == max(abs(tone_spectrum)));
 end
-W_calibration(:,1) = conj(W_calibration(:,1) ./  W_calibration(1,1));
-W_calibration(:,2) = conj(W_calibration(:,2) ./  W_calibration(1,2));
+W_calibration = exp(1j*angle(conj(W_calibration))) ./ abs(W_calibration);
 
 %% Calibrated signal
 for i = 1:16
     IQv((i-1)*10000+1:i*10000) = IQv((i-1)*10000+1:i*10000).* W_calibration(i,1);
     IQh((i-1)*10000+1:i*10000) = IQh((i-1)*10000+1:i*10000).* W_calibration(i,2);
 end
-plot(real(IQh))
+plot(real(IQv))
 %% Calibrated Measurement
 W = [eye(16) W_calibration(:,1)]; % in each configuration turn on a single element
 [evkObject, W_quantized] = uploadRAMTable(evkObject,array,W); 
