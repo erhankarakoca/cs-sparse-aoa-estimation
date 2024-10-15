@@ -8,10 +8,10 @@ N_y = 4;
 N = N_x * N_y; 
 D_az = 181;                     
 D_el = 91; 
-K = 10; % Number of measurements (snapshots)
+K = 100; % Number of measurements (snapshots)
 L = 1; % Number of different incoming signals   (AoAs)
-SNR_dB = 20; 
-d = 1; 
+SNR_dB = 10; 
+d = 0.7; 
 
 %% Grids
 azimuth_angles = linspace(-90, 90, D_az);
@@ -71,7 +71,7 @@ disp(true_elevations);
 
 %% Reconstruct it with the simplest mathematical model
 basic_reconstruction = pinv(Phi) * y_noisy_rf_chain;
-
+% basic_reconstruction = lsqr(Phi, y_noisy_rf_chain);
 % Find indices of maximum values (estimated AoAs)
 [~, max_idx] = max(abs(basic_reconstruction));
 [estimated_az_idx, estimated_el_idx] = ind2sub([D_az, D_el], max_idx);

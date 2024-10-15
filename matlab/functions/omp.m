@@ -10,7 +10,7 @@ function x_omp = omp(Phi, y, max_iter, tol)
     
     % Initialize variables
     residual = y;  
-    Phi_normalized = Phi ./ vecnorm(Phi);  
+    Phi_normalized = Phi./ vecnorm(Phi);  
     active_set = [];  
     x_omp = zeros(size(Phi, 2), 1);  
 
@@ -22,7 +22,7 @@ function x_omp = omp(Phi, y, max_iter, tol)
         
         % Step 2: Solve least-squares problem on selected columns
         Phi_active = Phi(:, active_set);
-        x_ls = pinv(Phi_active) * y;  % Least-squares solution
+        x_ls = lsqr(Phi_active, y);  % Least-squares solution
         
         % Step 3: Update residual
         residual = y - Phi_active * x_ls;
