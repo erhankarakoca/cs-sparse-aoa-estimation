@@ -8,9 +8,9 @@ N_y = 4;
 N = N_x * N_y; 
 D_az = 181;                     
 D_el = 91; 
-K = 100; % Number of measurements (snapshots)
+K = 50; % Number of measurements (snapshots)
 L = 1; % Number of different incoming signals   (AoAs)
-SNR_dB = 10; 
+SNR_dB = -5; 
 d = 0.7; 
 
 %% Grids

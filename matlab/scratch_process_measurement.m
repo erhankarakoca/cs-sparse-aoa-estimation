@@ -3,13 +3,13 @@ clear all;
 close all;
 %% Load
 % load("W_matrix_init.mat");
-load("W_matrix_quantized.mat");
+% load("W_matrix_quantized.mat");
 
 % Don't remap for new data
-load("meas_14_10_1.mat");
+load("meas_14_10_2.mat");
 
 %Calibration matrix that is going to be dot product with W
-calibration = load("calibration_meas.mat", "IQv");
+calibration = load("calibration_meas2.mat", "IQv");
 
 %% Sivers Configuration Parameters
 N_x = 4; 
@@ -98,17 +98,17 @@ end
 
 
 %% Calibration matrix initilization 
-figure 
-plot(real(calibration.IQv))
-hold on
-for i = 1:10000:160000
-    xline(i)
-end
-figure
-for i = 1:16
-    plot(real(calibration.IQv((i-1)*10000+1:i*10000)))
-    hold on
-end
+% figure 
+% plot(real(calibration.IQv))
+% hold on
+% for i = 1:10000:160000
+%     xline(i)
+% end
+% figure
+% for i = 1:16
+%     plot(real(calibration.IQv((i-1)*10000+1:i*10000)))
+%     hold on
+% end
 W_calibration = zeros(16,1);
 offset1 = 200;
 offset2 = 0;
@@ -140,6 +140,18 @@ end
 % disp(W_remap);
 
 %%
+% W_calibration = exp(1j*angle(conj(W_calibration))) ./ abs(W_calibration);
+% W_calibration = W_calibration ./ abs(W_calibration);
+% % W_calibration(:,1) = (W_calibration(:,1)) .*  abs(W_calibration(:,1));
+% % W_calibration(:,2) = (W_calibration(:,2)) .*  abs(W_calibration(:,2));
+% figure
+% for i = 1:16
+%     plot(real(all_samples(i,:)*W_calibration(i,1)))
+%     hold on
+% end
+%% 
+
+%%
 W_quantized = W_quantized(:, W_matrix_start_index+1:W_matrix_end_index);
 W_calibrated = W_quantized.*W_calibration;
 y_noisy_rf_chain = IQ_filtered;
@@ -153,7 +165,8 @@ Phi = W_calibrated' * A;
 %% TO DO : Requires Antenna mapping for SIVERS --> mapping(W, A)
 
 %% Reconstruct it with the simplest mathematical model
-basic_reconstruction = pinv(Phi) * y_sampled;
+basic_reconstruction = abs(pinv(Phi) * y_sampled);
+% spatial_spectrum = abs(Phi * (A' .* y_sampled))^2; % With sensing matrix
 
 % Find indices of maximum values (estimated AoAs)
 [~, max_idx] = max(abs(basic_reconstruction));
@@ -170,12 +183,13 @@ disp('Estimated Elevation Angle:');
 disp(elevation_angles(estimated_el_idx));
 
 figure;
-surf(elevation_angles, azimuth_angles, abs(basic_reconstruction));
+surf(elevation_angles, azimuth_angles, ...
+    (basic_reconstruction).^2);
 title(sprintf('Basic Reconstruction (Azimuth: %.2f°, Elevation: %.2f°)', ...
     azimuth_angles(estimated_az_idx), elevation_angles(estimated_el_idx)));
 shading interp
 %% Reconstruction with algorithm
-max_iter = 5;      
+max_iter = 10;      
 tol = 1e-6;         
 
 x_omp = omp(Phi, y_sampled, max_iter, tol);
