@@ -8,10 +8,10 @@ N_y = 4;
 N = N_x * N_y; 
 D_az = 181;                     
 D_el = 91; 
-K = 50; % Number of measurements (snapshots)
+K = 100; % Number of measurements (snapshots)
 L = 1; % Number of different incoming signals   (AoAs)
-SNR_dB = -5; 
-d = 0.7; 
+SNR_dB = 20; 
+d = 0.5; 
 
 %% Grids
 azimuth_angles = linspace(-90, 90, D_az);
@@ -30,8 +30,17 @@ for phi = elevation_angles
     end
 end
 
+% A = dftmtx(16);
+
 %% Random beamforming matrix W
-W = (1 / sqrt(N)) * exp(1j * 2 * pi * rand(N, K));
+% W = (1 / sqrt(N)) * exp(1j * 2 * pi * rand(N, K));
+
+% Generate Bernoulli phases (0 or π)
+bernoulli_phases = pi * randi([0, 1], N, K);
+
+% Construct W with Bernoulli-distributed phase shifts
+W = (1 / sqrt(N)) * exp(1j * bernoulli_phases);
+
 
 %% DFT matrix
 % F = dftmtx(N);
@@ -44,17 +53,17 @@ true_azimuths = randsample(azimuth_angles, L, false);
 true_elevations = randsample(elevation_angles, L, false);
 
 %% Pilot signal
-s = ones(1, L);
+s = randn(1, K) + 1j*(randn(1,K));
 
 %% The received signal X
-X = zeros(N, 1); % Initialize the received signal
-for i = 1:L
-    a = steering_vector_ura(true_azimuths(i), true_elevations(i), N_x, N_y, d);
-    X = X + a * s(i).';
+X = zeros(N, 16); % Initialize the received signal
+for i = 1:K
+    a = steering_vector_ura(true_azimuths(1), true_elevations(1), N_x, N_y, d);
+    X(i,:) = a * s(i).';
 end
 
 %% Compressed received signal using random beamforming
-y_compressed = W' * X;
+y_compressed = sum(W' .* (X./s.'),2);
 
 %% Noisy received signal
 SNR = 10^(SNR_dB / 10); 
@@ -70,7 +79,7 @@ disp('True Elevation Angles (degrees):');
 disp(true_elevations);
 
 %% Reconstruct it with the simplest mathematical model
-basic_reconstruction = pinv(Phi) * y_noisy_rf_chain;
+basic_reconstruction = abs(pinv(Phi)*y_noisy_rf_chain);
 % basic_reconstruction = lsqr(Phi, y_noisy_rf_chain);
 % Find indices of maximum values (estimated AoAs)
 [~, max_idx] = max(abs(basic_reconstruction));
