@@ -6,21 +6,25 @@ close all;
 % load("W_matrix_quantized.mat");
 
 % Don't remap for new data
-load("meas_14_10_2.mat");
+load("meas_14_10_1.mat");
 
 %Calibration matrix that is going to be dot product with W
-calibration = load("calibration_meas2.mat", "IQv");
+calibration = load("calibration_meas.mat", "IQv");
 
 %% Sivers Configuration Parameters
 N_x = 4; 
 N_y = 4; 
 N = N_x * N_y; 
-D_az = 181;                     
+
+D_az = 181;  
 D_el = 91; 
-K = 50; % Number of measurements (snapshots)
+
+K = 40; % Number of measurements (snapshots)
 W_matrix_start_index = 0;
 W_matrix_end_index = W_matrix_start_index + K ;
+
 L = 1; % Number of different incoming signals   (AoAs)
+
 f = 25e9;
 
 wavelength = physconst('LightSpeed')/f ; 
@@ -117,7 +121,10 @@ for i = 1:16
     tone_samples_v = calibration.IQv(offset1 + (i-1)*10000+1:(i)*10000 - offset2);
     all_samples(i,:) = tone_samples_v;
     tone_spectrum = fft(tone_samples_v)/(10000-offset1-offset2);
-    W_calibration(i,1) = tone_spectrum(abs(tone_spectrum) == max(abs(tone_spectrum)));
+    peak_index = find(abs(tone_spectrum) == max(abs(tone_spectrum)));
+    W_calibration(i,1) = angle(tone_spectrum(peak_index));  % Store phase instead of magnitude
+    % W_calibration(i,1) = tone_spectrum(abs(tone_spectrum) == max(abs(tone_spectrum)));
+   
     % tone_samples_h = IQh(offset1 + (i-1)*10000:(i)*10000 - offset2);
     % tone_spectrum = fft(tone_samples_h)/(10000-offset1-offset2);
     % W_calibration(i,2) = tone_spectrum(abs(tone_spectrum) == max(abs(tone_spectrum)));
@@ -156,7 +163,7 @@ W_quantized = W_quantized(:, W_matrix_start_index+1:W_matrix_end_index);
 W_calibrated = W_quantized.*W_calibration;
 y_noisy_rf_chain = IQ_filtered;
 % start_index = 400;
-sample_indexes = 147+200 + W_matrix_start_index*samples_per_symbol:samples_per_symbol:W_matrix_end_index*samples_per_symbol;
+sample_indexes = 147+500 + W_matrix_start_index*samples_per_symbol:samples_per_symbol:W_matrix_end_index*samples_per_symbol;
 y_sampled = y_noisy_rf_chain(sample_indexes).';
 
 %% Sensing matrix Phi
