@@ -19,7 +19,7 @@ N = N_x * N_y;
 D_az = 181;  
 D_el = 91; 
 
-K = 40; % Number of measurements (snapshots)
+K = 70; % Number of measurements (snapshots)
 W_matrix_start_index = 0;
 W_matrix_end_index = W_matrix_start_index + K ;
 
