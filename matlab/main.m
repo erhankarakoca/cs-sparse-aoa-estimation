@@ -7,15 +7,15 @@ N_x = 4;
 N_y = 4; 
 N = N_x * N_y; 
 D_az = 181;                     
-D_el = 91; 
+D_el = 181; 
 K = 20; % Number of measurements (snapshots)
 L = 1; % Number of different incoming signals   (AoAs)
 SNR_dB = 20; 
-d = 0.68; 
+d = 0.5; 
 
 %% Grids
 azimuth_angles = linspace(-90, 90, D_az);
-elevation_angles = linspace(-45, 45, D_el);
+elevation_angles = linspace(-90, 90, D_el);
 
 %% Steering vector function for URA
 % Steering Vector: For each angle pair (azimuth θ and elevation ϕ), 
