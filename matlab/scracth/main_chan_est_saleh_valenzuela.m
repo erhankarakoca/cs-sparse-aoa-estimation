@@ -26,11 +26,12 @@ dft_matrix = dftmtx(N);
 H_spatial=zeros(N,K); % the spatial channel 
 for k=1:K
     H_spatial(:,k)= generate_channel(N1,N2,L,type);
-    H_angular(:,k)= UN.' * H_spatial(:,k);
+    H_angular_dft(:,k)= UN.' * H_spatial(:,k);
 end
 figure; surf(abs(reshape(H_spatial,N1,N2)));
-figure; surf(abs(reshape(H_angular,N1,N2)));
-
+title('True spatial SV channel')
+figure; surf(abs(reshape(H_angular_dft,N1,N2)));
+title('True DFT of the spatial SV channel')
 %% Steering vector gen
 D_az=181;
 D_el=91;
@@ -55,18 +56,25 @@ pilot_signal = 1 ;
 
 W = exp(1j * 2 * pi * rand(N, M))'; % Random pilot matrix
 received_signal = W * H_spatial * pilot_signal; % Received signals from pilot measurements
+
 H_spatial_est = pinv(W) * received_signal; % Estimated channel in spatial domain
-figure; surf(abs(reshape(H_spatial_est,N1,N2)));
-figure; surf(abs(reshape( UN.' * H_spatial_est,N1,N2)));
+figure; surf(abs(abs(reshape(H_spatial_est,N1,N2)))); % plot spatial domain
+title('Compressed and LS Estimate of the spatial channel ')
 
-H_angular_est = pinv(W*A) * received_signal; % Estimated channel in spatial domain
+figure; surf(abs(reshape( UN.' * H_spatial_est,N1,N2))); % dft transform 
+title('DFT of the Compressed LS Estimate of the spatial channel')
+
+H_angular_est = pinv(W*A) * received_signal; % Direct estimation in angular domain
 figure; surf(elevation_angles, azimuth_angles, abs(reshape(H_angular_est,D_az,D_el)));
+title('Direct est of angular domain with pinv(W*A)')
 
-H_angular_space = (A'* H_spatial);
-figure; surf(elevation_angles, azimuth_angles, abs(reshape(H_angular_space,D_az,D_el)));
+H_angular_true = (A'* H_spatial); % True angular space 
+figure; surf(elevation_angles, azimuth_angles, abs(reshape(H_angular_true,D_az,D_el)));
+title('True angular space of SV channel')
 
-
-
+H_angular_estimated = (A'* H_spatial_est); % Estimated angular space 
+figure; surf(elevation_angles, azimuth_angles, abs(reshape(H_angular_estimated,D_az,D_el)));
+title('Angular domain transform after estimated spatial SV channel est')
 
 function [h] = generate_channel(N1,N2,L,type)
 
