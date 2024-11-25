@@ -50,7 +50,7 @@ send_cmd(5,cmd_client,1,d1,0,sprintf('rxctl agc set data %d',AGC_atten));
 send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl power 0 0')); % güç ölçmesin
 
 %% Upload Compressive Sensing Weights 
-W = (1 / sqrt(16)) * exp(1j * 2 * pi * rand(16, 100));
+W = (1 / sqrt(16)) * exp(1j * 2 * pi * rand(16, 60));
 % load('W_matrix_init.mat');
 % W = [W zeros(16,5)];
 % array = []; % ya URA objesi, ya da x,y koordinatları
@@ -68,18 +68,26 @@ array = [-2 -2 -2 -2 -1 -1 -1 -1 1 1 1 1 2 2 2 2; ...
 
 
 %% Receiving
-pause(5)
-send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 1000 100')); % 0 samples_per_beam number_of_beams
+% pause(5)
+% send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 1000 100')); % 0 samples_per_beam number_of_beams
 % send_cmd(30,cmd_client,1,d1,verbose,sprintf('rxctl bix %d',beam_rx));
+% send_cmd(5,cmd_client,1,d1,verbose,'rxctl beam 0 0 0'); % no beam sweeping
+% period = 1000 * 10; %n_rx_beams*period
+% dataout = zeros(2,period);
+send_cmd(5,cmd_client,1,d1,verbose,sprintf('rxctl beam 0 1000 60')); % 0 samples_per_beam number_of_beams
+period = 1000; %n_rx_beams*period
+n_meas = 120;%size(W,2);
+dataout = acquire_data(cmd_client, dat_client, bin2dec('1100'), period*n_meas);
+% for i = 1: n_meas
+%     send_cmd(5,cmd_client,1,d1,verbose,sprintf('rxctl bix %d',i-1));
+%     dataout(:,(i-1)*period+1:i*period) = acquire_data(cmd_client, dat_client, bin2dec('1100'), period);
+% end
 
-
-
-period = 1000 * 100; %n_rx_beams*period
-dataout = acquire_data(cmd_client, dat_client, bin2dec('1100'), period);
 
 IQv = dataout(1,:); % vertical pol
 IQh = dataout(2,:); % horizontal pol
-
+plot(real(IQv))
+xline(60*period)
 % plot(real(IQv))
 % hold on 
 % for i = 1000:1000:50e3
