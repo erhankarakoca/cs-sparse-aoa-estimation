@@ -1,25 +1,18 @@
 % clc;
 % clear all;
 % close all;
+
 %% Load
-% load("W_matrix_init.mat");
-% load("W_matrix_quantized.mat");
-
-% Don't remap for new data
-% load("meas_14_10_1.mat");
-
-%Calibration matrix that is going to be dot product with W
-% calibration = load("calibration_meas.mat", "IQv");
 
 %% Sivers Configuration Parameters
 N_x = 4; 
 N_y = 4; 
 N = N_x * N_y; 
 
-D_az = 181;  
+D_az = 181;   
 D_el = 91; 
 
-K = 60; % Number of measurements (snapshots)
+K = size(W,2); % Number of measurements (snapshots)
 W_matrix_start_index = 0;
 W_matrix_end_index = W_matrix_start_index + K ;
 
@@ -39,7 +32,7 @@ fc = 10e6;
 frequency_shift = exp(-1j*2*pi*fc*t);
 
 IQv_shifted = IQv .* frequency_shift;
-IQv_shifted_removed = IQv_shifted;
+IQv_shifted_removed = IQv_shifted(157:end);
 IQ_filtered = lowpass(IQv_shifted_removed, 10e6 , fs, ImpulseResponse="iir",Steepness=0.80);
 
 %% Figuring
@@ -112,70 +105,12 @@ for phi = elevation_angles
 end
 
 
-%% Calibration matrix initilization 
-% figure 
-% plot(real(calibration.IQv))
-% hold on
-% for i = 1:10000:160000
-%     xline(i)
-% end
-% figure
-% for i = 1:16
-%     plot(real(calibration.IQv((i-1)*10000+1:i*10000)))
-%     hold on
-% end
-
-% W_calibration = zeros(16,1);
-% offset1 = 200;
-% offset2 = 0;
-% all_samples = zeros(16,10000-offset1-offset2);
-% for i = 1:16
-%     tone_samples_v = calibration.IQv(offset1 + (i-1)*10000+1:(i)*10000 - offset2);
-%     all_samples(i,:) = tone_samples_v;
-%     tone_spectrum = fft(tone_samples_v)/(10000-offset1-offset2);
-%     % peak_index = find(abs(tone_spectrum) == max(abs(tone_spectrum)));
-%     % W_calibration(i,1) = angle(tone_spectrum(peak_index));  % Store phase instead of magnitude
-%     W_calibration(i,1) = tone_spectrum(abs(tone_spectrum) == max(abs(tone_spectrum)));
-% 
-%     % tone_samples_h = IQh(offset1 + (i-1)*10000:(i)*10000 - offset2);
-%     % tone_spectrum = fft(tone_samples_h)/(10000-offset1-offset2);
-%     % W_calibration(i,2) = tone_spectrum(abs(tone_spectrum) == max(abs(tone_spectrum)));
-% end
-
-%% Random beamforming matrix W
-%   | W(4,x)   W(8,x)   W(12,x)   W(16,x) |
-%   | W(3,x)   W(7,x)   W(11,x)   W(15,x) |
-%   | W(2,x)   W(6,x)   W(10,x)   W(14,x) |
-%   | W(1,x)   W(5,x)   W(9,x)    W(13,x) |
-% W_remap = zeros(4, size(W, 2));
-
-% Remap according to the given structure
-% W_remap = W_quantized([4:-1:1,8:-1:5,12:-1:9, 16:-1:13], :);   
-% W_remap = W_quantized([4:-1:1,8:-1:5,12:-1:9, 16:-1:13], :);   
-% A_remap = A([4:-1:1,8:-1:5,12:-1:9, 16:-1:13], :); 
-
-
-% Display the remapped matrix
-% disp(W_remap);
-
 %%
-% W_calibration = exp(1j*angle(conj(W_calibration))) ./ abs(W_calibration);
-% W_calibration = W_calibration ./ abs(W_calibration);
-% % W_calibration(:,1) = (W_calibration(:,1)) .*  abs(W_calibration(:,1));
-% % W_calibration(:,2) = (W_calibration(:,2)) .*  abs(W_calibration(:,2));
-% figure
-% for i = 1:16
-%     plot(real(all_samples(i,:)*W_calibration(i,1)))
-%     hold on
-% end
-%% 
-
-%%
-W_quantized = W_quantized(:, W_matrix_start_index+1:W_matrix_end_index);
+% W_quantized = W_quantized(:, W_matrix_start_index+1:W_matrix_end_index);
 W_calibrated = W_quantized.*W_calibration(:,1);
 y_noisy_rf_chain = IQv_shifted_removed;
-start_index = 400;
-sample_indexes = 100 + 500 + W_matrix_start_index*samples_per_symbol:samples_per_symbol:W_matrix_end_index*samples_per_symbol;
+% start_index = 400;
+% sample_indexes = 100 + 500 + W_matrix_start_index*samples_per_symbol:samples_per_symbol:W_matrix_end_index*samples_per_symbol;
 % y_sampled = y_noisy_rf_chain(sample_indexes);
 y_sampled = measured_fft_samples;
 
@@ -185,7 +120,22 @@ Phi = W_calibrated' * A;
 %% TO DO : Requires Antenna mapping for SIVERS --> mapping(W, A)
 
 %% Reconstruct it with the simplest mathematical model
-basic_reconstruction = abs(pinv(W_calibrated.') * y_sampled.');
+basic_reconstruction = abs(pinv(Phi) * y_sampled.');
+
+%% Spatial channel extraction 
+spatial_channel = pinv(W.')*y_sampled.';
+
+figure
+surf(reshape(real(spatial_channel),4,4))
+
+figure
+surf(reshape(angle(spatial_channel),4,4))
+
+dft_mtx=dftmtx(16);
+channel_dft = dft_mtx * spatial_channel;
+
+figure 
+imagesc(abs(reshape(channel_dft,4,4)))
 % spatial_spectrum = abs(Phi * (A' .* y_sampled))^2; % With sensing matrix
 
 % Find indices of maximum values (estimated AoAs)
