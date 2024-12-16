@@ -75,8 +75,8 @@ IQh = dataout(2,:); % horizontal pol
 
 %% Calibration
 W_calibration = zeros(16,2);
-offset1 = 500;
-offset2 = 0;
+offset1 = 200;
+offset2 = 200;
 all_samples = zeros(16,period-offset1-offset2);
 for i = 1:16
     tone_samples_v = IQv(offset1 + (i-1)*period+1:(i)*period - offset2);

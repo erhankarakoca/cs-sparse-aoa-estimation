@@ -86,6 +86,7 @@ dataout = acquire_data(cmd_client, dat_client, bin2dec('1100'), period*n_meas);
 
 IQv = dataout(1,:); % vertical pol
 IQh = dataout(2,:); % horizontal pol
+figure
 plot(real(IQv))
 xline(60*period)
 % plot(real(IQv))
