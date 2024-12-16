@@ -84,7 +84,10 @@ for k = 1:K
     % Step 1: Extract the k-th time-domain sample and apply FFT
     IQ_time_sample = IQv_shifted_removed((k-1)*1000 + 1:k*1000); % Adjust indices as needed
      % FFT for the k-th sample
-    measured_fft_samples(k)= max(fft(IQ_time_sample,1024)); % take max samples of the fft
+    fft_samples = fft(IQ_time_sample,1024); 
+    [~, index] = max(abs(fft_samples)); % take max samples of the fft
+    measured_fft_samples(k)= fft_samples(index);
+
 end
 
 %% Grids
@@ -107,12 +110,25 @@ end
 
 %%
 % W_quantized = W_quantized(:, W_matrix_start_index+1:W_matrix_end_index);
-W_calibrated = W_quantized.*W_calibration(:,1);
+W_calibrated = W_quantized.*conj(W_calibration(:,1));
 y_noisy_rf_chain = IQv_shifted_removed;
 % start_index = 400;
 % sample_indexes = 100 + 500 + W_matrix_start_index*samples_per_symbol:samples_per_symbol:W_matrix_end_index*samples_per_symbol;
 % y_sampled = y_noisy_rf_chain(sample_indexes);
 y_sampled = measured_fft_samples;
+
+
+%%
+
+figure
+stem(abs(measured_fft_samples)/max(abs(measured_fft_samples)));
+hold on
+stem(abs(sum(W_calibrated,1)) / max(abs(sum(W_calibrated,1))))
+
+figure
+stem(angle(measured_fft_samples));
+
+
 
 %% Sensing matrix Phi
 Phi = W_calibrated' * A;
