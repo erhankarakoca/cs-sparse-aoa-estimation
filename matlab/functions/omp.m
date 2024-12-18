@@ -10,7 +10,7 @@ function x_omp = omp(Phi, y, max_iter, tol)
     
     % Initialize variables
     residual = y;  
-    Phi_normalized = Phi./ vecnorm(Phi);  
+    Phi_normalized = Phi ./ vecnorm(Phi);  
     active_set = [];  
     x_omp = zeros(size(Phi, 2), 1);  
 
