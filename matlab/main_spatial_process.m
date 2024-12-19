@@ -34,55 +34,55 @@ frequency_shift = exp(-1j*2*pi*fc*t);
 
 IQv_shifted = IQv .* frequency_shift;
 IQv_shifted_removed = IQv_shifted(157:end);
-IQ_filtered = lowpass(IQv_shifted_removed, 10e6 , fs, ImpulseResponse="iir",Steepness=0.80);
+IQ_filtered = lowpass(IQv_shifted_removed, 1e6 , fs, ImpulseResponse="iir",Steepness=0.80);
 
 %% Figuring
 
-% figure
-% % Plot real part of IQv in the first subplot
-% subplot(3, 1, 1);
-% plot(real(IQv));
-% hold on;
-% plot(imag(IQv));
-% title('Real and Imaginary parts of IQv');
-% 
-% % Plot real part of IQv_shifted in the second subplot
-% subplot(3, 1, 2);
-% plot(real(IQv_shifted));
-% hold on;
-% plot(imag(IQv_shifted));
-% title('Real and Imaginary parts of IQv\_shifted');
-% 
-% subplot(3, 1, 3);
-% plot(real(IQ_filtered))
-% hold on
-% plot(imag(IQ_filtered))
-% 
-% %% Plot scopes
-% scope_1 = spectrumAnalyzer(InputDomain="time", SampleRate=fs, AveragingMethod="exponential",...
-%     PlotAsTwoSidedSpectrum=true,...
-%     RBWSource="auto",SpectrumUnits="dBW");
-% scope_1(IQv')
-% scope_1.release
-% 
-% scope_2 = spectrumAnalyzer(InputDomain="time", SampleRate=fs, AveragingMethod="exponential",...
-%     PlotAsTwoSidedSpectrum=true,...
-%     RBWSource="auto",SpectrumUnits="dBW");
-% scope_2(IQv_shifted')
-% scope_2.release
-% 
-% 
-% 
-% scope_3 = spectrumAnalyzer(InputDomain="time", SampleRate=fs, AveragingMethod="exponential",...
-%     PlotAsTwoSidedSpectrum=true,...
-%     RBWSource="auto",SpectrumUnits="dBW");
-% scope_3(IQ_filtered')
-% scope_3.release
+figure
+% Plot real part of IQv in the first subplot
+subplot(3, 1, 1);
+plot(real(IQv));
+hold on;
+plot(imag(IQv));
+title('Real and Imaginary parts of IQv');
+
+% Plot real part of IQv_shifted in the second subplot
+subplot(3, 1, 2);
+plot(real(IQv_shifted));
+hold on;
+plot(imag(IQv_shifted));
+title('Real and Imaginary parts of IQv\_shifted');
+
+subplot(3, 1, 3);
+plot(real(IQ_filtered))
+hold on
+plot(imag(IQ_filtered))
+
+%% Plot scopes
+scope_1 = spectrumAnalyzer(InputDomain="time", SampleRate=fs, AveragingMethod="exponential",...
+    PlotAsTwoSidedSpectrum=true,...
+    RBWSource="auto",SpectrumUnits="dBW");
+scope_1(IQv')
+scope_1.release
+
+scope_2 = spectrumAnalyzer(InputDomain="time", SampleRate=fs, AveragingMethod="exponential",...
+    PlotAsTwoSidedSpectrum=true,...
+    RBWSource="auto",SpectrumUnits="dBW");
+scope_2(IQv_shifted')
+scope_2.release
+
+
+
+scope_3 = spectrumAnalyzer(InputDomain="time", SampleRate=fs, AveragingMethod="exponential",...
+    PlotAsTwoSidedSpectrum=true,...
+    RBWSource="auto",SpectrumUnits="dBW");
+scope_3(IQ_filtered')
+scope_3.release
 %% FFT of the each symbol 
 
 for k = 1:K
     % Step 1: Extract the k-th time-domain sample and apply FFT
-    IQ_time_sample = IQv_shifted_removed((k-1)*1000 + 1:k*1000); % Adjust indices as needed
+    IQ_time_sample = IQ_filtered((k-1)*1000 + 1:k*1000); % Adjust indices as needed
      % FFT for the k-th sample
     fft_samples = fft(IQ_time_sample,1024*8); 
     [~, index] = max(abs(fft_samples)); % take max samples of the fft
@@ -184,8 +184,8 @@ title(sprintf('Basic Reconstruction (Azimuth: %.2f°, Elevation: %.2f°)', ...
     azimuth_angles(estimated_az_idx), elevation_angles(estimated_el_idx)));
 shading interp
 %% Reconstruction with algorithm
-max_iter = 1;      
-tol = 1e-5;         
+max_iter = 3;      
+tol = 1e-11;         
 
 x_omp = omp(Phi, y_sampled.', max_iter, tol);
 
